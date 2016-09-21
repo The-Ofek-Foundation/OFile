@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
 
 /**
  * OFile
- * Opens file to read/write efficiently.
+ * Opens file to read/write efficiently and intuitively.
  * @author Ofek Gila
  * @since August 2016
  * @version September 20th, 2016
@@ -28,6 +28,11 @@ public class OFile extends File {
 	private boolean appending;
 	private boolean writerOpen, readerOpen;
 
+	/**
+	 * Constructor with defined path to file.
+	 * Creates the file if doesn't exist.
+	 * @param  path string path to file
+	 */
 	public OFile(String path) {
 		super(path);
 		appending = false;
@@ -43,10 +48,19 @@ public class OFile extends File {
 			}
 	}
 
-	public OFile(OFile file) {
+	/**
+	 * Creates OFile given a {@link File} instance.
+	 * @param  file file to create OFile from
+	 */
+	public OFile(File file) {
 		this(file.getPath());
 	}
 
+	/**
+	 * Writes string to file
+	 * @param  str string to write
+	 * @return     OFile instance
+	 */
 	public OFile write(String str) {
 		if (!writerOpen)
 			openWriter();
@@ -57,6 +71,13 @@ public class OFile extends File {
 		return null;
 	}
 
+	/**
+	 * Writes string to file with specific appending mode
+	 * (remembers appending mode in subsequent calls).
+	 * @param  str       string to write
+	 * @param  appending appending mode (true to append)
+	 * @return           OFile instance
+	 */
 	public OFile write(String str, boolean appending) {
 		if (appending != this.appending) {
 			this.appending = appending;
@@ -67,6 +88,10 @@ public class OFile extends File {
 		return write(str);
 	}
 
+	/**
+	 * Reads a single line from file as string.
+	 * @return the line
+	 */
 	public String read() {
 		if (!readerOpen)
 			openReader();
@@ -76,6 +101,10 @@ public class OFile extends File {
 		return null;
 	}
 
+	/**
+	 * Reads whole file super-efficiently as string.
+	 * @return the whole file as string
+	 */
 	public String readFile() {
 		close();
 		try {
@@ -89,6 +118,11 @@ public class OFile extends File {
 		return null;
 	}
 
+	/**
+	 * Creates and opens {@link BufferedWriter} instance,
+	 * closing {@link BufferedReader} instance if necessary.
+	 * @return OFile instance
+	 */
 	public OFile openWriter() {
 		if (readerOpen)
 			closeReader();
@@ -100,6 +134,11 @@ public class OFile extends File {
 		return writerOpen ? this:null;
 	}
 
+	/**
+	 * Creates and opens {@link BufferedReader} instance,
+	 * closing {@link BufferedWriter} instance if necessary.
+	 * @return OFile instance
+	 */
 	public OFile openReader() {
 		if (writerOpen)
 			closeWriter();
@@ -110,6 +149,10 @@ public class OFile extends File {
 		return readerOpen ? this:null;
 	}
 
+	/**
+	 * Closes {@link BufferedWriter} instance.
+	 * @return OFile instance
+	 */
 	public OFile closeWriter() {
 		try {
 			bufferedWriter.close();
@@ -120,6 +163,10 @@ public class OFile extends File {
 		return null;
 	}
 
+	/**
+	 * Closes {@link BufferedReader} instance.
+	 * @return OFile instance
+	 */
 	public OFile closeReader() {
 		try {
 			bufferedReader.close();
@@ -129,6 +176,11 @@ public class OFile extends File {
 		return null;
 	}
 
+	/**
+	 * Closes {@link BufferedReader} instance or
+	 * {@link BufferedWriter} instance if open.
+	 * @return OFile instance
+	 */
 	public OFile close() {
 		if (writerOpen && closeWriter() == null)
 			return null;
@@ -137,18 +189,30 @@ public class OFile extends File {
 		return this;
 	}
 
+	/**
+	 * Clears contents of file.
+	 * @return OFile instance
+	 */
 	public OFile clear() {
 		if (close() == null || write("", false) == null || close() == null)
 			return null;
 		return this;
 	}
 
+	/**
+	 * Gets {@link BufferedWriter} object for file
+	 * @return {@link BufferedWriter} object
+	 */
 	public BufferedWriter getWriter() {
 		if (!writerOpen)
 			openWriter();
 		return bufferedWriter;
 	}
 
+	/**
+	 * Gets {@link BufferedReader} object for file
+	 * @return {@link BufferedReader} object
+	 */
 	public BufferedReader getReader() {
 		if (!readerOpen)
 			openReader();
