@@ -1,24 +1,25 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Scanner;
-import java.util.NoSuchElementException;
 
-import java.nio.channels.FileChannel;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+
+import java.util.NoSuchElementException;
+import java.util.Scanner;
 
 /**
  * OFile
  * Opens file to read/write efficiently and intuitively.
  * @author Ofek Gila
  * @since August 2016
- * @version September 20th, 2016
+ * @version September 22nd, 2016
  */
 public class OFile extends File {
 
