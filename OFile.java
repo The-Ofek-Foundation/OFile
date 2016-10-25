@@ -1,11 +1,3 @@
-/**
- * OFile
- * Opens file to read/write efficiently and intuitively.
- * @author Ofek Gila
- * @since August 2016
- * @version September 22nd, 2016
- */
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,9 +11,12 @@ import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import java.util.NoSuchElementException;
-import java.util.Scanner;
-
+/**
+ * OFile
+ * Opens file to read/write efficiently and intuitively.
+ * @author Ofek Gila
+ * @since August 2016
+ */
 public class OFile extends File {
 
 	private BufferedWriter bufferedWriter;

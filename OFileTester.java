@@ -2,7 +2,7 @@ public class OFileTester {
 	public static void main(String... pumpkins) {
 
 		/* Create tester.txt  */
-		OFile ofile = new OFile("tester.txt");
+		OFile ofile = new OFile("ofile-tester.txt");
 
 		/* Writing to file */
 		ofile.write("Line one");
@@ -12,6 +12,7 @@ public class OFileTester {
 
 		/* Reading line */
 		System.out.println(ofile.read());
+		System.out.println();
 
 		/* Append to file */
 		ofile.write(" appended text", true);
