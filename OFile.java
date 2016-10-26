@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -214,5 +216,52 @@ public class OFile extends File {
 		if (!readerOpen)
 			openReader();
 		return bufferedReader;
+	}
+
+	/* And now for File -> OFile overrides */
+
+	@Override
+	public OFile getAbsoluteFile() {
+		return convertFile(super.getAbsoluteFile());
+	}
+
+	@Override
+	public OFile getCanonicalFile() {
+		try {
+			return convertFile(super.getCanonicalFile());
+		} catch (IOException e) {}
+		return null;
+	}
+
+	@Override
+	public File getParentFile() {
+		return convertFile(super.getParentFile());
+	}
+
+	@Override
+	public OFile[] listFiles() {
+		return convertFiles(super.listFiles());
+	}
+
+	@Override
+	public OFile[] listFiles(FileFilter filter) {
+		return convertFiles(super.listFiles(filter));
+	}
+
+	@Override
+	public OFile[] listFiles(FilenameFilter filter) {
+		return convertFiles(super.listFiles(filter));
+	}
+
+	private static OFile convertFile(File file) {
+		return new OFile(file);
+	}
+
+	private static OFile[] convertFiles(File[] files) {
+		int numFiles = files.length;
+		OFile[] ofiles = new OFile[numFiles];
+		for (int i = 0; i < numFiles; i++)
+			ofiles[i] = new OFile(files[i]);
+		return ofiles;
 	}
 }
