@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -12,6 +13,14 @@ import java.io.PrintWriter;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.Path;
+
+import java.security.MessageDigest;
+import java.security.DigestInputStream;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * OFile
@@ -26,6 +35,8 @@ public class OFile extends File {
 	private FileWriter fileWriter;
 	private boolean appending;
 	private boolean writerOpen, readerOpen;
+	private byte[] checksum;
+	private boolean checksumValid;
 
 	/**
 	 * Constructor with defined path to file.
@@ -45,6 +56,7 @@ public class OFile extends File {
 					createNewFile();
 				}	catch (IOException e2) {}
 			}
+		refreshChecksum();
 	}
 
 	/**
@@ -53,6 +65,10 @@ public class OFile extends File {
 	 */
 	public OFile(File file) {
 		this(file.getPath());
+	}
+
+	public OFile(Path path) {
+		this(path.toString());
 	}
 
 	/**
@@ -65,6 +81,7 @@ public class OFile extends File {
 			openWriter();
 		try {
 			bufferedWriter.write(str);
+			checksumValid = false;
 			return this;
 		}	catch (IOException e) {}
 		return null;
@@ -216,6 +233,104 @@ public class OFile extends File {
 		if (!readerOpen)
 			openReader();
 		return bufferedReader;
+	}
+
+	/**
+	 * Copies the file to the destination with a {@link StandardCopyOption}.
+	 * @param  destination        a path to the destination folder
+	 * @param  standardCopyOption the copy option
+	 * @return                    the new file
+	 */
+	public OFile copy(String destination, StandardCopyOption standardCopyOption) {
+		try {
+			return new OFile(Files.copy(toPath(), (new OFile(destination + getName())).toPath(), standardCopyOption));
+		} catch (IOException e) {}
+		return null;
+	}
+
+	/**
+	 * Copies file to new destination, replacing existing file if present.
+	 * @param  destination a path to the destination folder
+	 * @return             the new file
+	 */
+	public OFile copyReplace(String destination) {
+		return copy(destination, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	/**
+	 * Checks if two non-directory files are equal by matching their checksums.
+	 * @param  file a non-directory {@link File} to compare with
+	 * @return      true if equal, false otherwise
+	 */
+	public boolean equals(File file) {
+		if (!checksumValid)
+			refreshChecksum();
+		if (!checksumValid) {
+			System.err.println("ERROR: Checksum Invalid!!!");
+			if (isDirectory())
+				System.err.println("Cannot get folder checksum!");
+			return false;
+		}
+		try {
+			byte[] fileChecksum = createChecksum(file);
+			for (int i = 0; i < fileChecksum.length; i++)
+				if (checksum[i] != fileChecksum[i])
+					return false;
+			return true;
+		} catch (Exception e) {
+			System.err.println("ERROR: Checksum(2) Invalid!!!");
+			if (file.isDirectory())
+				System.err.println("Cannot get folder checksum!");
+		}
+		return false;
+	}
+
+	/**
+	 * Gets this file's checksum if possible
+	 * @return a byte array of the checksum
+	 */
+	public byte[] getChecksum() {
+		if (!checksumValid)
+			refreshChecksum();
+		if (!checksumValid)
+			return null;
+		return checksum;
+	}
+
+	/**
+	 * Refreshes this file's checksum (to avoid repeated calculations)
+	 */
+	private void refreshChecksum() {
+		try {
+			checksum = createChecksum(this);
+			checksumValid = true;
+		} catch (Exception e) {
+			checksumValid = false;
+		}
+	}
+
+	/**
+	 * Creates a checksum for a file
+	 * @param  file      the {@link Fike} to create the checksum for
+	 * @return           a byte checksum array
+	 * @throws Exception Pokemon error handling.
+	 */
+	private static byte[] createChecksum(File file) throws Exception {
+		InputStream fis =  new FileInputStream(file);
+
+		byte[] buffer = new byte[1024];
+		MessageDigest complete = MessageDigest.getInstance("MD5");
+		int numRead;
+
+		do {
+			numRead = fis.read(buffer);
+			if (numRead > 0) {
+				complete.update(buffer, 0, numRead);
+			}
+		} while (numRead != -1);
+
+		fis.close();
+		return complete.digest();
 	}
 
 	/* And now for File -> OFile overrides */
