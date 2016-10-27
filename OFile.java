@@ -257,32 +257,89 @@ public class OFile extends File {
 		return copy(destination, StandardCopyOption.REPLACE_EXISTING);
 	}
 
+	public static boolean filesEqual(File file1, File file2) {
+		if (file1.isDirectory() != file2.isDirectory())
+			return false;
+
+		if (!file1.getName().equals(file2.getName()))
+			return false;
+
+		if (file1.isDirectory())
+			return directoriesEqual(file1, file2);
+
+		byte[] file1Checksum = createChecksum(file1);
+
+		if (file1Checksum == null) {
+			System.err.printf("Error getting %s checksum!", file1.getPath());
+			return false;
+		}
+
+		byte[] file2Checksum = createChecksum(file2);
+		if (file2Checksum == null) {
+			System.err.printf("Error getting %s checksum!", file2.getPath());
+			return false;
+		}
+
+		for (int i = 0; i < file1Checksum.length; i++)
+			if (file1Checksum[i] != file2Checksum[i])
+				return false;
+		return true;
+	}
+
 	/**
 	 * Checks if two non-directory files are equal by matching their checksums.
 	 * @param  file a non-directory {@link File} to compare with
 	 * @return      true if equal, false otherwise
 	 */
 	public boolean equals(File file) {
+		if (isDirectory() != file.isDirectory()) // file and folder
+			return false;
+
+		if (!getName().equals(file.getName()))
+			return false;
+
+		if (isDirectory())
+			return directoriesEqual(this, file);
+
 		if (!checksumValid)
 			refreshChecksum();
+
 		if (!checksumValid) {
-			System.err.println("ERROR: Checksum Invalid!!!");
-			if (isDirectory())
-				System.err.println("Cannot get folder checksum!");
+			System.err.printf("Error getting %s checksum!", getPath());
 			return false;
 		}
-		try {
-			byte[] fileChecksum = createChecksum(file);
-			for (int i = 0; i < fileChecksum.length; i++)
-				if (checksum[i] != fileChecksum[i])
-					return false;
-			return true;
-		} catch (Exception e) {
-			System.err.println("ERROR: Checksum(2) Invalid!!!");
-			if (file.isDirectory())
-				System.err.println("Cannot get folder checksum!");
+
+		byte[] fileChecksum = createChecksum(file);
+		if (fileChecksum == null) {
+			System.err.printf("Error getting %s checksum!", file.getPath());
+			return false;
 		}
-		return false;
+
+		for (int i = 0; i < fileChecksum.length; i++)
+			if (checksum[i] != fileChecksum[i])
+				return false;
+		return true;
+	}
+
+	/**
+	 * Checks if two directories are equal (contain equal contents).
+	 *
+	 * @param  d1 a directory to compare
+	 * @param  d2 another directory to compare
+	 * @return    true if exactly equal, false otherwise
+	 */
+	private static boolean directoriesEqual(File d1, File d2) {
+		File[] d1Files = d1.listFiles();
+		File[] d2Files = d2.listFiles();
+
+		if (d1Files.length != d2Files.length)
+			return false;
+
+		for (int i = 0; i < d1Files.length; i++)
+			if (!filesEqual(d1Files[i], d2Files[i]))
+				return false;
+
+		return true;
 	}
 
 	/**
@@ -292,8 +349,6 @@ public class OFile extends File {
 	public byte[] getChecksum() {
 		if (!checksumValid)
 			refreshChecksum();
-		if (!checksumValid)
-			return null;
 		return checksum;
 	}
 
@@ -301,11 +356,11 @@ public class OFile extends File {
 	 * Refreshes this file's checksum (to avoid repeated calculations)
 	 */
 	private void refreshChecksum() {
-		try {
-			checksum = createChecksum(this);
-			checksumValid = true;
-		} catch (Exception e) {
+		if (isDirectory())
 			checksumValid = false;
+		else {
+			checksum = createChecksum(this);
+			checksumValid = checksum != null;
 		}
 	}
 
@@ -315,21 +370,35 @@ public class OFile extends File {
 	 * @return           a byte checksum array
 	 * @throws Exception Pokemon error handling.
 	 */
-	private static byte[] createChecksum(File file) throws Exception {
-		InputStream fis =  new FileInputStream(file);
+	private static byte[] createChecksum(File file) {
+		InputStream fis;
+		try {
+			fis =  new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			return null;
+		}
 
 		byte[] buffer = new byte[1024];
-		MessageDigest complete = MessageDigest.getInstance("MD5");
+		MessageDigest complete;
+		try {
+			complete = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			return null;
+		}
 		int numRead;
 
-		do {
-			numRead = fis.read(buffer);
-			if (numRead > 0) {
-				complete.update(buffer, 0, numRead);
-			}
-		} while (numRead != -1);
+		try {
+			do {
+				numRead = fis.read(buffer);
+				if (numRead > 0) {
+					complete.update(buffer, 0, numRead);
+				}
+			} while (numRead != -1);
+			fis.close();
+		} catch (IOException e) {
+			return null;
+		}
 
-		fis.close();
 		return complete.digest();
 	}
 
