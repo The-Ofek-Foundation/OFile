@@ -35,8 +35,6 @@ public class OFile extends File {
 	private FileWriter fileWriter;
 	private boolean appending;
 	private boolean writerOpen, readerOpen;
-	private byte[] checksum;
-	private boolean checksumValid;
 
 	/**
 	 * Constructor with defined path to file.
@@ -48,15 +46,21 @@ public class OFile extends File {
 		appending = false;
 		writerOpen = readerOpen = false;
 		if (!exists())
-			try {
-				createNewFile();
-			}	catch (IOException e) {
-				getParentFile().mkdirs();
-				try {
-					createNewFile();
-				}	catch (IOException e2) {}
-			}
-		refreshChecksum();
+			if (path.charAt(path.length() - 1) == '/')
+				mkdirs();
+			else createNewFile();
+	}
+
+	@Override
+	public boolean createNewFile() {
+		File parentFile = super.getParentFile();
+		if (parentFile != null && !parentFile.exists())
+			parentFile.mkdirs();
+		try {
+			return super.createNewFile();
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	/**
@@ -67,6 +71,10 @@ public class OFile extends File {
 		this(file.getPath());
 	}
 
+	/**
+	 * Creates {@code OFile} given a {@link Path} instance.
+	 * @param  path the {@link Path} to create the OFile from
+	 */
 	public OFile(Path path) {
 		this(path.toString());
 	}
@@ -81,7 +89,6 @@ public class OFile extends File {
 			openWriter();
 		try {
 			bufferedWriter.write(str);
-			checksumValid = false;
 			return this;
 		}	catch (IOException e) {}
 		return null;
@@ -242,8 +249,10 @@ public class OFile extends File {
 	 * @return                    the new file
 	 */
 	public OFile copy(String destination, StandardCopyOption standardCopyOption) {
+		close();
 		try {
-			return new OFile(Files.copy(toPath(), (new OFile(destination + getName())).toPath(), standardCopyOption));
+			return new OFile(Files.copy(toPath(), new OFile(destination)
+				.toPath(), standardCopyOption));
 		} catch (IOException e) {}
 		return null;
 	}
@@ -257,15 +266,23 @@ public class OFile extends File {
 		return copy(destination, StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	public static boolean filesEqual(File file1, File file2) {
+	/**
+	 * Checks if two files are equal by matching their checksums.
+	 * @param  file1         a {@link File} to compare with
+	 * @param  file2         a {@link File} to compare with
+	 * @param  nameSensitive care about name of files
+	 * @return               true if equal, false otherwise
+	 */
+	private static boolean filesEqual(File file1, File file2,
+		boolean nameSensitive) {
 		if (file1.isDirectory() != file2.isDirectory())
 			return false;
 
-		if (!file1.getName().equals(file2.getName()))
+		if (nameSensitive && !file1.getName().equals(file2.getName()))
 			return false;
 
 		if (file1.isDirectory())
-			return directoriesEqual(file1, file2);
+			return directoriesEqual(file1, file2, true);
 
 		byte[] file1Checksum = createChecksum(file1);
 
@@ -287,38 +304,55 @@ public class OFile extends File {
 	}
 
 	/**
-	 * Checks if two non-directory files are equal by matching their checksums.
-	 * @param  file a non-directory {@link File} to compare with
+	 * Checks if two files are equal by matching their checksums. Also makes
+	 * sure they have the same name.
+	 * @param  file1 a {@link File} to compare with
+	 * @param  file2 a {@link File} to compare with
+	 * @return      true if equal, false otherwise
+	 */
+	public static boolean filesEqual(File file1, File file2) {
+		return filesEqual(file1, file2, true);
+	}
+
+	/**
+	 * Checks if two files are equal by matching their checksums, disregarding
+	 * their file names.
+	 * @param  file1 a {@link File} to compare
+	 * @param  file2 a {@link File} to compare
+	 * @return       true if equal, false otherwise
+	 */
+	public static boolean filesEqualIgnoreName(File file1, File file2) {
+		return filesEqual(file1, file2, false);
+	}
+
+	/**
+	 * Checks if two files are equal by matching their checksums.
+	 * @param  file          a non-directory {@link File} to compare with
+	 * @param  nameSensitive false if should ignore name of file.
+	 * @return      true if equal, false otherwise
+	 */
+	private boolean equals(File file, boolean nameSensitive) {
+		return filesEqual(this, file, nameSensitive);
+	}
+
+	/**
+	 * Checks if two files are equal by matching their checksums. Also makes
+	 * sure they have the same name.
+	 * @param  file a {@link File} to compare with
 	 * @return      true if equal, false otherwise
 	 */
 	public boolean equals(File file) {
-		if (isDirectory() != file.isDirectory()) // file and folder
-			return false;
+		return equals(file, true);
+	}
 
-		if (!getName().equals(file.getName()))
-			return false;
-
-		if (isDirectory())
-			return directoriesEqual(this, file);
-
-		if (!checksumValid)
-			refreshChecksum();
-
-		if (!checksumValid) {
-			System.err.printf("Error getting %s checksum!", getPath());
-			return false;
-		}
-
-		byte[] fileChecksum = createChecksum(file);
-		if (fileChecksum == null) {
-			System.err.printf("Error getting %s checksum!", file.getPath());
-			return false;
-		}
-
-		for (int i = 0; i < fileChecksum.length; i++)
-			if (checksum[i] != fileChecksum[i])
-				return false;
-		return true;
+	/**
+	 * Checks if two non-directory files are equal by matching their checksums.
+	 * Ignores name of file.
+	 * @param  file a non-directory {@link File} to compare with
+	 * @return      true if equal, false otherwise
+	 */
+	public boolean equalsIgnoreName(File file) {
+		return equals(file, false);
 	}
 
 	/**
@@ -328,7 +362,8 @@ public class OFile extends File {
 	 * @param  d2 another directory to compare
 	 * @return    true if exactly equal, false otherwise
 	 */
-	private static boolean directoriesEqual(File d1, File d2) {
+	private static boolean directoriesEqual(File d1, File d2,
+		boolean nameSensitive) {
 		File[] d1Files = d1.listFiles();
 		File[] d2Files = d2.listFiles();
 
@@ -336,7 +371,7 @@ public class OFile extends File {
 			return false;
 
 		for (int i = 0; i < d1Files.length; i++)
-			if (!filesEqual(d1Files[i], d2Files[i]))
+			if (!filesEqual(d1Files[i], d2Files[i], nameSensitive))
 				return false;
 
 		return true;
@@ -347,21 +382,7 @@ public class OFile extends File {
 	 * @return a byte array of the checksum
 	 */
 	public byte[] getChecksum() {
-		if (!checksumValid)
-			refreshChecksum();
-		return checksum;
-	}
-
-	/**
-	 * Refreshes this file's checksum (to avoid repeated calculations)
-	 */
-	private void refreshChecksum() {
-		if (isDirectory())
-			checksumValid = false;
-		else {
-			checksum = createChecksum(this);
-			checksumValid = checksum != null;
-		}
+		return createChecksum(this);
 	}
 
 	/**
@@ -402,6 +423,69 @@ public class OFile extends File {
 		return complete.digest();
 	}
 
+	/**
+	 * Returns true if a file at that path exists, false otherwise.
+	 * @param  path The path to the file.
+	 * @return      true if a file at that path exists, false otherwise.
+	 */
+	public static boolean fileExists(String path) {
+		return new File(path).exists();
+	}
+
+	/**
+	 * Returns the path to the parent directory.
+	 * @return the String path to the parent directory
+	 */
+	public String getParentPath() {
+		return getPath().indexOf("/") == -1 ? "":
+			getPath().substring(0, getPath().lastIndexOf("/") + 1);
+	}
+
+	/**
+	 * Renames this file given a new file.
+	 * @param  file a {@link File} to rename to
+	 * @return      an updated OFile instance
+	 */
+	public OFile renameToFile(File file) {
+		if (super.renameTo(file))
+			return new OFile(file.getPath());
+		else return null;
+	}
+
+	/**
+	 * Renames this file given a newName.
+	 * @param  newName the new name of this file
+	 * @return         an updated OFile instance
+	 */
+	public OFile renameTo(String newName) {
+		String newPath = getParentPath() + newName;
+		if (super.renameTo(new File(newPath)))
+			return new OFile(newPath);
+		else return null;
+	}
+
+	/* General Overrides */
+
+	/**
+	 * @deprecated Does not create new {@code OFile} instance, so getPath and
+	 *             others be outdated. Use {@link #renameToFile} instead.
+	 */
+	@Override
+	@Deprecated
+	public boolean renameTo(File file) {
+		return super.renameTo(file);
+	}
+
+	@Override
+	public boolean delete() {
+		if (isDirectory()) {
+			OFile[] fileList = listFiles();
+			for (int i = 0; i < fileList.length; i++)
+				fileList[i].delete();
+		}
+		return super.delete();
+	}
+
 	/* And now for File -> OFile overrides */
 
 	@Override
@@ -418,7 +502,7 @@ public class OFile extends File {
 	}
 
 	@Override
-	public File getParentFile() {
+	public OFile getParentFile() {
 		return convertFile(super.getParentFile());
 	}
 
@@ -437,15 +521,27 @@ public class OFile extends File {
 		return convertFiles(super.listFiles(filter));
 	}
 
+	/**
+	 * Converts a {@link File} into an {@code OFile}.
+	 * @param  file the {@link File} to convert
+	 * @return      the converted {@code OFile}
+	 */
 	private static OFile convertFile(File file) {
-		return new OFile(file);
+		if (file != null)
+			return new OFile(file);
+		return null;
 	}
 
+	/**
+	 * Converts an array of {@link File}s into an array of {@code OFile}s.
+	 * @param  files the  array of {@link File}s to convert
+	 * @return       the converted array of {@code OFile}s
+	 */
 	private static OFile[] convertFiles(File[] files) {
 		int numFiles = files.length;
 		OFile[] ofiles = new OFile[numFiles];
 		for (int i = 0; i < numFiles; i++)
-			ofiles[i] = new OFile(files[i]);
+			ofiles[i] = convertFile(files[i]);
 		return ofiles;
 	}
 }
