@@ -10,6 +10,9 @@ public class BugTester {
 	private final String TEST_DIR_NAME;
 	private final String COPY_FILE_NAME;
 	private final String RENAMED_FILE_NAME;
+
+	private int testsOk, testsFail, testsTotal;
+
 	private OFile testFile;
 
 	public BugTester(String fileName) {
@@ -17,6 +20,7 @@ public class BugTester {
 		TEST_DIR_NAME = "test_dir";
 		COPY_FILE_NAME = "copy_" + fileName;
 		RENAMED_FILE_NAME = "renamed_" + fileName;
+		testsOk = testsFail = testsTotal = 0;
 		testFile = null;
 	}
 
@@ -40,15 +44,26 @@ public class BugTester {
 		try {
 			test.test();
 			System.out.println("ok");
+			testsOk++;
 		} catch (AssertionError ae) {
 			System.out.println("FAIL\n");
 			ae.printStackTrace();
 			System.out.println();
+			testsFail++;
 		} catch (Exception err) {
 			System.out.println("FAIL\n");
 			err.printStackTrace();
 			System.out.println();
+			testsFail++;
 		}
+		testsTotal++;
+	}
+
+	private void printSummary() {
+		if (testsFail > 0)
+			System.out.printf("!!!! %d test%s failed out of %d tests total.\n",
+				testsFail, testsFail == 1 ? "":"s", testsTotal);
+		else System.out.printf("Passed all %d tests!\n", testsTotal);
 	}
 
 	private void testCreateDelete(String fileName) {
@@ -254,6 +269,8 @@ public class BugTester {
 
 		cleanupFile();
 
+		System.out.println();
+		printSummary();
 		System.out.println();
 	}
 
