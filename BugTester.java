@@ -74,8 +74,7 @@ public class BugTester {
 		assertExists(TEST_DIR_NAME, true);
 		assertEmpty(testFile);
 
-		assertDelete(testFile);
-		assertDelete(testFile.getParentFile());
+		assertDelete(testFile, testFile.getParentFile());
 	}
 
 	private void testReadWrite() {
@@ -110,25 +109,21 @@ public class BugTester {
 		assertExists(COPY_FILE_NAME, false);
 
 		testFile.write("copy this");
-		OFile copiedFile = testFile.copyReplace(COPY_FILE_NAME);
+		OFile copiedFile = assertReplace(testFile, COPY_FILE_NAME);
 
-		// Test that copied file is the same
-		assertExists(copiedFile, true);
 		assertEqual(copiedFile.readFile(), testFile.readFile());
 		assertEqual(copiedFile.getChecksum(), testFile.getChecksum());
-		assertEqual(copiedFile, testFile, true);
 
 		// Test that changes in copy file result in changes in equality
 		copiedFile.clear();
 		assertEqual(copiedFile, testFile, false);
-		testFile.copyReplace(COPY_FILE_NAME);
-		assertEqual(copiedFile, testFile, true);
+		assertReplace(testFile, COPY_FILE_NAME);
 
 		copiedFile = assertRenaming(copiedFile, RENAMED_FILE_NAME);
 		assertEqual(copiedFile, testFile, true);
 
 		assertDelete(copiedFile);
-		assertClear(testFile.clear());
+		assertClear(testFile);
 	}
 
 	private void testFileCopyIntoDirectory() {
@@ -137,16 +132,13 @@ public class BugTester {
 		assertExists(TEST_DIR_NAME, false);
 
 		testFile.write("something to copy");
-		OFile copiedFile = testFile.copyReplace(filePath);
+		OFile copiedFile = assertReplace(testFile, filePath);
 
-		assertExists(copiedFile, true);
 		assertEqual(copiedFile.readFile(), testFile.readFile());
 		assertEqual(copiedFile.getChecksum(), testFile.getChecksum());
-		assertEqual(copiedFile, testFile, true);
 
-		assertDelete(copiedFile);
-		assertDelete(copiedFile.getParentFile());
-		assertClear(testFile.clear());
+		assertDelete(copiedFile, copiedFile.getParentFile());
+		assertClear(testFile);
 	}
 
 	private void testDirectoryCopyWithFile() {
@@ -159,7 +151,7 @@ public class BugTester {
 		OFile copyFile1 = new OFile(file1Path);
 		copyFile1.write("some random\nlines to copy").write("and some more");
 
-		OFile copyFile2 = copyFile1.copyReplace(file2Path);
+		OFile copyFile2 = assertReplace(copyFile1, file2Path);
 
 		assertEqual(copyFile1.getParentFile(), copyFile2.getParentFile(), true);
 
@@ -167,15 +159,14 @@ public class BugTester {
 		assertEqual(copyFile1.getParentFile(), copyFile2.getParentFile(),
 			false);
 
-		copyFile1.copyReplace(file2Path);
+		assertReplace(copyFile1, file2Path);
 		assertEqual(copyFile1.getParentFile(), copyFile2.getParentFile(), true);
 
 		copyFile2 = assertRenaming(copyFile2, RENAMED_FILE_NAME);
 		assertEqual(copyFile1.getParentFile(), copyFile2.getParentFile(),
 			false);
 
-		assertDelete(TEST_DIR_NAME + "/");
-		assertDelete(TEST_DIR_NAME + "2/");
+		assertDelete(TEST_DIR_NAME + "/", TEST_DIR_NAME + "2/");
 	}
 
 	private void testFileRenamingInDirectory() {
@@ -234,10 +225,7 @@ public class BugTester {
 		assertEqual(new OFile(dir4.getPath() + "/" + tempFile.getName()),
 			tempFile, true);
 
-		assertDelete(dir);
-		assertDelete(dir2);
-		assertDelete(dir3.getParentFile());
-		assertDelete(dir4.getParentFile());
+		assertDelete(dir, dir2, dir3.getParentFile(), dir4.getParentFile());
 	}
 
 	public void runTests() {
@@ -319,14 +307,17 @@ public class BugTester {
 			String.format("Error clearing file %s!", file.getPath());
 	}
 
-	private void assertDelete(OFile file) {
-		assert file.delete() :
-			String.format("Error deleting file %s!", file.getPath());
-		assertExists(file, false);
+	private void assertDelete(OFile... files) {
+		for (int i = 0; i < files.length; i++) {
+			assert files[i].delete() :
+			String.format("Error deleting file %s!", files[i].getPath());
+				assertExists(files[i], false);
+		}
 	}
 
-	private void assertDelete(String path) {
-		assertDelete(new OFile(path));
+	private void assertDelete(String... paths) {
+		for (int i = 0; i < paths.length; i++)
+			assertDelete(new OFile(paths[i]));
 	}
 
 	private OFile assertRenaming(OFile file, String newName) {
