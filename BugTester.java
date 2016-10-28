@@ -193,6 +193,53 @@ public class BugTester {
 		assertDelete(renamedFile.getParentFile());
 	}
 
+	private void testDirectoryRenaming() {
+		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
+
+		assertExists(TEST_DIR_NAME, false);
+
+		OFile dir = new OFile(TEST_DIR_NAME + "/");
+		assertExists(dir, true);
+
+		OFile tempFile = new OFile(filePath);
+		tempFile.write("text to preserve");
+		assertExists(filePath, true);
+		assertEqual(tempFile.readFile(), "text to preserve");
+
+		OFile renamedDir = assertRenaming(dir, TEST_DIR_NAME + "2");
+		assertExists(TEST_DIR_NAME + "2/" + TEST_FILE_NAME, true);
+		assertEqual(new OFile(TEST_DIR_NAME + "2/" + TEST_FILE_NAME).readFile(),
+			"text to preserve");
+
+		assertDelete(renamedDir);
+	}
+
+	private void testDirectoryCopying() {
+		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
+
+		assertExists(TEST_DIR_NAME, false);
+
+		OFile dir = new OFile(TEST_DIR_NAME + "/");
+		assertExists(dir, true);
+
+		OFile tempFile = new OFile(filePath);
+		tempFile.write("text to preserve");
+		assertExists(filePath, true);
+		assertEqual(tempFile.readFile(), "text to preserve");
+
+		OFile dir2 = assertReplace(dir, TEST_DIR_NAME + "2");
+		OFile dir3 = assertReplace(dir, TEST_DIR_NAME + "3/loko");
+		OFile dir4 = assertReplace(dir3, TEST_DIR_NAME + "4/loko");
+		assertEqual(dir4, dir, true);
+		assertEqual(new OFile(dir4.getPath() + "/" + tempFile.getName()),
+			tempFile, true);
+
+		assertDelete(dir);
+		assertDelete(dir2);
+		assertDelete(dir3.getParentFile());
+		assertDelete(dir4.getParentFile());
+	}
+
 	public void runTests() {
 		System.out.println();
 
@@ -212,6 +259,10 @@ public class BugTester {
 			testDirectoryCopyWithFile());
 		runTest("Test file renaming in a directory", () ->
 			testFileRenamingInDirectory());
+		runTest("Test directory renaming with file", () ->
+			testDirectoryRenaming());
+		runTest("Test directory copying", () ->
+			testDirectoryCopying());
 
 		cleanupFile();
 
@@ -284,6 +335,16 @@ public class BugTester {
 			String.format("Error renaming file %s!", file.getPath());
 		assertExists(renamedFile, true);
 		return renamedFile;
+	}
+
+	private OFile assertReplace(OFile file, String newPath) {
+		OFile replacedFile = file.copyReplace(newPath);
+		assert replacedFile != null:
+			String.format("Error replacing file %s!", file.getPath());
+		assertExists(file, true);
+		assertExists(replacedFile, true);
+		assertEqual(file, replacedFile, true);
+		return replacedFile;
 	}
 
 	private int countCharacters(String s, char c) {

@@ -250,6 +250,14 @@ public class OFile extends File {
 	 */
 	public OFile copy(String destination, StandardCopyOption standardCopyOption) {
 		close();
+		if (isDirectory()) {
+			OFile[] filesList = listFiles();
+			for (int i = 0; i < filesList.length; i++)
+				filesList[i].copy(destination + "/" + filesList[i].getName(),
+					standardCopyOption);
+			if (filesList.length > 0)
+				return new OFile(destination + "/");
+		}
 		try {
 			return new OFile(Files.copy(toPath(), new OFile(destination)
 				.toPath(), standardCopyOption));
@@ -449,7 +457,7 @@ public class OFile extends File {
 	public OFile renameToFile(File file) {
 		close();
 		if (super.renameTo(file))
-			return new OFile(file.getPath());
+			return new OFile(file.getPath() + (isDirectory() ? "/":""));
 		else return null;
 	}
 
@@ -462,7 +470,7 @@ public class OFile extends File {
 		close();
 		String newPath = getParentPath() + newName;
 		if (super.renameTo(new File(newPath)))
-			return new OFile(newPath);
+			return new OFile(newPath + (isDirectory() ? "/":""));
 		else return null;
 	}
 
