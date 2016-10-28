@@ -447,6 +447,7 @@ public class OFile extends File {
 	 * @return      an updated OFile instance
 	 */
 	public OFile renameToFile(File file) {
+		close();
 		if (super.renameTo(file))
 			return new OFile(file.getPath());
 		else return null;
@@ -458,6 +459,7 @@ public class OFile extends File {
 	 * @return         an updated OFile instance
 	 */
 	public OFile renameTo(String newName) {
+		close();
 		String newPath = getParentPath() + newName;
 		if (super.renameTo(new File(newPath)))
 			return new OFile(newPath);
@@ -473,6 +475,7 @@ public class OFile extends File {
 	@Override
 	@Deprecated
 	public boolean renameTo(File file) {
+		close();
 		return super.renameTo(file);
 	}
 

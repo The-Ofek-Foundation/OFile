@@ -178,6 +178,21 @@ public class BugTester {
 		assertDelete(TEST_DIR_NAME + "2/");
 	}
 
+	private void testFileRenamingInDirectory() {
+		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
+
+		assertExists(filePath, false);
+
+		OFile file = new OFile(filePath).write("text to preserve");
+		assertExists(file, true);
+
+		OFile renamedFile = assertRenaming(file, RENAMED_FILE_NAME);
+		assertExists(file, false);
+		assertEqual(renamedFile.readFile(), "text to preserve");
+
+		assertDelete(renamedFile.getParentFile());
+	}
+
 	public void runTests() {
 		System.out.println();
 
@@ -195,6 +210,8 @@ public class BugTester {
 			testFileCopyIntoDirectory());
 		runTest("Test directory copying with file", () ->
 			testDirectoryCopyWithFile());
+		runTest("Test file renaming in a directory", () ->
+			testFileRenamingInDirectory());
 
 		cleanupFile();
 
