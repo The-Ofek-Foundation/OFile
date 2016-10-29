@@ -2,23 +2,40 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.InvocationTargetException;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+
 import java.util.List;
 import java.util.ArrayList;
 
 public abstract class CodeTester {
 
 	public static final String TEST_METHOD_PREFIX = "_test";
-	private int testsOk, testsFail, testsTotal;
+	private int testsOk, testsFail, testsSkipped, testsTotal;
 	private List<CodeError> codeErrors;
 
 	public CodeTester() {
-		testsOk = testsFail = testsTotal = 0;
+		testsOk = testsFail = testsSkipped = testsTotal = 0;
 		codeErrors = new ArrayList<CodeError>();
 	}
 
-	public void runTest(CodeTester childTester, Method testMethod) {
+	@Retention(RetentionPolicy.RUNTIME)
+	@Target({ElementType.METHOD})
+	@Inherited
+	@interface SkipTest {}
+
+	private void runTest(CodeTester childTester, Method testMethod) {
 		String methodName = parseMethodName(testMethod.getName());
 		System.out.printf("%-50s --> ", methodName);
+
+		if (skipTest(testMethod)) {
+			System.out.println("skipped");
+			testsSkipped++;
+			return;
+		}
 
 		try {
 			testMethod.invoke(childTester);
@@ -36,9 +53,17 @@ public abstract class CodeTester {
 		testsTotal++;
 	}
 
-	public void printSummary(double elapsedTime) {
+	private boolean skipTest(Method testMethod) {
+		return testMethod.getAnnotation(SkipTest.class) != null;
+	}
+
+	private void printSummary(double elapsedTime) {
 		System.out.println();
-		if (testsFail > 0) {
+
+		if (testsFail == 0)
+			System.out.printf("All tests passed, in %f seconds!\n",
+				elapsedTime);
+		else {
 			System.out.printf("!!!! %d test%s failed out of %d tests total "
 				+ "in %f seconds.\n", testsFail, testsFail == 1 ? "":"s",
 				testsTotal, elapsedTime);
@@ -47,13 +72,12 @@ public abstract class CodeTester {
 				System.out.printf("\n%s -> FAIL\n\n", codeError.getMethodName());
 				codeError.printStackTrace();
 			}
-		} else System.out.printf("Passed all %d tests in %f seconds!\n",
-			testsTotal, elapsedTime);
+		}
 		System.out.println();
 	}
 
 	public final void runTests(CodeTester childTester) {
-		System.out.println();
+		System.out.printf("\nRunning tests:\n\n");
 		Class c = childTester.getClass();
 		double startTime = System.nanoTime();
 		for (Method method : c.getDeclaredMethods())
