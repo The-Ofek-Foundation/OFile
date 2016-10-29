@@ -18,7 +18,7 @@ public class BugTester extends CodeTester {
 		TEST_DIR_NAME = "test_dir";
 		COPY_FILE_NAME = "copy_" + fileName;
 		RENAMED_FILE_NAME = "renamed_" + fileName;
-		runTests(this);
+		runTests();
 		cleanupFile();
 	}
 
