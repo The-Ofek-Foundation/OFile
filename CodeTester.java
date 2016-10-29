@@ -1,9 +1,10 @@
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.InvocationTargetException;
 
 public abstract class CodeTester {
 
-	public static final String TEST_METHOD_PREFIX = "test";
+	public static final String TEST_METHOD_PREFIX = "_test";
 	private int testsOk, testsFail, testsError, testsTotal;
 
 	public CodeTester() {
@@ -16,9 +17,14 @@ public abstract class CodeTester {
 			testMethod.invoke(childTester);
 			System.out.println("ok");
 			testsOk++;
+		} catch (InvocationTargetException ite) {
+			System.out.println("FAIL\n");
+			ite.getCause().printStackTrace();
+			System.out.println();
+			testsFail++;
 		} catch (IllegalAccessException iae) {
 			System.out.println("ERR\n");
-			iae.printStackTrace();
+			iae.getCause().printStackTrace();
 			System.out.println();
 			testsError++;
 		} catch (AssertionError ae) {

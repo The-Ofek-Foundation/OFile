@@ -33,7 +33,7 @@ public class BugTester extends CodeTester {
 		new OFile(TEST_DIR_NAME + "2/").delete();
 	}
 
-	private void _testFileCreationAndDeletion(String fileName) {
+	private void testFileCreationAndDeletion(String fileName) {
 		assertExists(fileName, false);
 
 		OFile lokoFile = new OFile(fileName);
@@ -44,12 +44,12 @@ public class BugTester extends CodeTester {
 		assertDelete(lokoFile);
 	}
 
-	public void testFileCreationAndDeletion() {
-		_testFileCreationAndDeletion("loko");
-		_testFileCreationAndDeletion("loko/");
+	public void _testFileCreationAndDeletion() {
+		testFileCreationAndDeletion("loko");
+		testFileCreationAndDeletion("loko/");
 	}
 
-	public void testFileCreationAndDeletionWithinDirectory() {
+	public void _testFileCreationAndDeletionWithinDirectory() {
 		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
 
 		assertExists(filePath, false);
@@ -64,7 +64,7 @@ public class BugTester extends CodeTester {
 		assertDelete(testDir, testDir.getParentFile());
 	}
 
-	public void testReadWrite() {
+	public void _testReadWrite() {
 		setupFile();
 
 		testFile.write("hello world");
@@ -80,7 +80,7 @@ public class BugTester extends CodeTester {
 		assertClear(testFile);
 	}
 
-	public void testLargeReadWrite() {
+	public void _testLargeReadWrite() {
 		int numLines = (int)1e4;
 		for (int i = 0; i < numLines; i++)
 			testFile.write(String.format("Line Num: %d\n", (i + 1)));
@@ -94,7 +94,7 @@ public class BugTester extends CodeTester {
 		assertClear(testFile);
 	}
 
-	public void testFileCopy() {
+	public void _testFileCopy() {
 		assertExists(COPY_FILE_NAME, false);
 
 		testFile.write("copy this");
@@ -115,7 +115,7 @@ public class BugTester extends CodeTester {
 		assertClear(testFile);
 	}
 
-	public void testFileCopyIntoDirectory() {
+	public void _testFileCopyIntoDirectory() {
 		String filePath = TEST_DIR_NAME + "/" + COPY_FILE_NAME;
 
 		assertExists(TEST_DIR_NAME, false);
@@ -130,7 +130,7 @@ public class BugTester extends CodeTester {
 		assertClear(testFile);
 	}
 
-	public void testDirectoryCopyWithFile() {
+	public void _testDirectoryCopyWithFile() {
 		String file1Path = TEST_DIR_NAME + "/" + COPY_FILE_NAME;
 		String file2Path = TEST_DIR_NAME + "2/" + COPY_FILE_NAME;
 
@@ -158,7 +158,7 @@ public class BugTester extends CodeTester {
 		assertDelete(TEST_DIR_NAME + "/", TEST_DIR_NAME + "2/");
 	}
 
-	public void testFileRenamingInDirectory() {
+	public void _testFileRenamingInDirectory() {
 		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
 
 		assertExists(filePath, false);
@@ -173,7 +173,7 @@ public class BugTester extends CodeTester {
 		assertDelete(renamedFile.getParentFile());
 	}
 
-	public void testDirectoryRenaming() {
+	public void _testDirectoryRenaming() {
 		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
 
 		assertExists(TEST_DIR_NAME, false);
@@ -194,7 +194,7 @@ public class BugTester extends CodeTester {
 		assertDelete(renamedDir);
 	}
 
-	public void testDirectoryCopying() {
+	public void _testDirectoryCopying() {
 		String filePath = TEST_DIR_NAME + "/" + TEST_FILE_NAME;
 
 		assertExists(TEST_DIR_NAME, false);
