@@ -1,0 +1,3 @@
+[submodule "CodeTester"]
+	path = CodeTester
+	url = git@github.com:The-Ofek-Foundation/CodeTester

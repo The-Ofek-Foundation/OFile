@@ -31,6 +31,9 @@ public class BugTester extends CodeTester {
 		new OFile(COPY_FILE_NAME).delete();
 		new OFile(TEST_DIR_NAME + "/").delete();
 		new OFile(TEST_DIR_NAME + "2/").delete();
+		new OFile(TEST_DIR_NAME + "3/").delete();
+		new OFile(TEST_DIR_NAME + "4/").delete();
+		new OFile("loko").delete();
 	}
 
 	private void testFileCreationAndDeletion(String fileName) {
