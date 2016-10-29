@@ -217,18 +217,18 @@ public class BugTester extends CodeTester {
 		assertDelete(dir, dir2, dir3.getParentFile(), dir4.getParentFile());
 	}
 
-	public void assertEqual(byte[] b1, byte[] b2, boolean equal) {
+	private void assertEqual(byte[] b1, byte[] b2, boolean equal) {
 		assert Arrays.equals(b1, b2) == equal :
 			String.format("Byte arrays%s equal!", equal ? " not":"");
 	}
 
-	public void assertEqual(OFile f1, OFile f2, boolean equal) {
+	private void assertEqual(OFile f1, OFile f2, boolean equal) {
 		assert f1.equalsIgnoreName(f2) == equal :
 			String.format("%s %s %s", f1.getPath(), equal ? "!=":"==",
 			f2.getPath());
 	}
 
-	public void assertEmpty(OFile file) {
+	private void assertEmpty(OFile file) {
 		if (file.isDirectory())
 			assert file.listFiles().length == 0 :
 				String.format("Directory %s is not empty.", file.getPath());
@@ -236,25 +236,25 @@ public class BugTester extends CodeTester {
 			String.format("File %s is not empty.", file.getPath());
 	}
 
-	public void assertExists(String path, boolean exists) {
+	private void assertExists(String path, boolean exists) {
 		assert OFile.fileExists(path) == exists :
 			String.format("File %s %s!", path,
 				exists ? "does not exist":"already exists");
 	}
 
-	public void assertExists(OFile file, boolean exists) {
+	private void assertExists(OFile file, boolean exists) {
 		assert file.exists() == exists :
 			String.format("File %s %s!", file.getPath(),
 				exists ? "does not exist":"already exists");
 		assertExists(file.getPath(), exists);
 	}
 
-	public void assertClear(OFile file) {
+	private void assertClear(OFile file) {
 		assert file.clear().readFile().length() == 0 :
 			String.format("Error clearing file %s!", file.getPath());
 	}
 
-	public void assertDelete(OFile... files) {
+	private void assertDelete(OFile... files) {
 		for (int i = 0; i < files.length; i++) {
 			assert files[i].delete() :
 			String.format("Error deleting file %s!", files[i].getPath());
@@ -262,12 +262,12 @@ public class BugTester extends CodeTester {
 		}
 	}
 
-	public void assertDelete(String... paths) {
+	private void assertDelete(String... paths) {
 		for (int i = 0; i < paths.length; i++)
 			assertDelete(new OFile(paths[i]));
 	}
 
-	public OFile assertRenaming(OFile file, String newName) {
+	private OFile assertRenaming(OFile file, String newName) {
 		OFile renamedFile = file.renameTo(newName);
 		assert renamedFile != null:
 			String.format("Error renaming file %s!", file.getPath());
@@ -275,7 +275,7 @@ public class BugTester extends CodeTester {
 		return renamedFile;
 	}
 
-	public OFile assertReplace(OFile file, String newPath) {
+	private OFile assertReplace(OFile file, String newPath) {
 		OFile replacedFile = file.copyReplace(newPath);
 		assert replacedFile != null:
 			String.format("Error replacing file %s!", file.getPath());
@@ -285,7 +285,7 @@ public class BugTester extends CodeTester {
 		return replacedFile;
 	}
 
-	public int countCharacters(String s, char c) {
+	private int countCharacters(String s, char c) {
 		int count = 0, len = s.length();
 		for (int i = 0; i < len; i++)
 			if (s.charAt(i) == c)

@@ -2,60 +2,64 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.InvocationTargetException;
 
+import java.util.List;
+import java.util.ArrayList;
+
 public abstract class CodeTester {
 
 	public static final String TEST_METHOD_PREFIX = "_test";
-	private int testsOk, testsFail, testsError, testsTotal;
+	private int testsOk, testsFail, testsTotal;
+	private List<CodeError> codeErrors;
 
 	public CodeTester() {
-		testsOk = testsFail = testsError = testsTotal = 0;
+		testsOk = testsFail = testsTotal = 0;
+		codeErrors = new ArrayList<CodeError>();
 	}
 
 	public void runTest(CodeTester childTester, Method testMethod) {
-		System.out.printf("%-50s --> ", parseMethodName(testMethod.getName()));
+		String methodName = parseMethodName(testMethod.getName());
+		System.out.printf("%-50s --> ", methodName);
+
 		try {
 			testMethod.invoke(childTester);
 			System.out.println("ok");
 			testsOk++;
-		} catch (InvocationTargetException ite) {
-			System.out.println("FAIL\n");
-			ite.getCause().printStackTrace();
-			System.out.println();
+		} catch (InvocationTargetException | IllegalAccessException ie) {
+			System.out.println("FAIL");
+			codeErrors.add(new CodeError(ie.getCause(), methodName));
 			testsFail++;
-		} catch (IllegalAccessException iae) {
-			System.out.println("ERR\n");
-			iae.getCause().printStackTrace();
-			System.out.println();
-			testsError++;
-		} catch (AssertionError ae) {
-			System.out.println("FAIL\n");
-			ae.printStackTrace();
-			System.out.println();
-			testsFail++;
-		} catch (Exception err) {
-			System.out.println("FAIL\n");
-			err.printStackTrace();
-			System.out.println();
+		} catch (AssertionError | Exception e) {
+			System.out.println("FAIL");
+			codeErrors.add(new CodeError(e, methodName));
 			testsFail++;
 		}
 		testsTotal++;
 	}
 
-	public void printSummary() {
+	public void printSummary(double elapsedTime) {
 		System.out.println();
-		if (testsFail > 0)
-			System.out.printf("!!!! %d test%s failed out of %d tests total.\n",
-				testsFail, testsFail == 1 ? "":"s", testsTotal);
-		else System.out.printf("Passed all %d tests!\n", testsTotal);
+		if (testsFail > 0) {
+			System.out.printf("!!!! %d test%s failed out of %d tests total "
+				+ "in %f seconds.\n", testsFail, testsFail == 1 ? "":"s",
+				testsTotal, elapsedTime);
+
+			for (CodeError codeError : codeErrors) {
+				System.out.printf("\n%s -> FAIL\n\n", codeError.getMethodName());
+				codeError.printStackTrace();
+			}
+		} else System.out.printf("Passed all %d tests in %f seconds!\n",
+			testsTotal, elapsedTime);
 		System.out.println();
 	}
 
 	public final void runTests(CodeTester childTester) {
+		System.out.println();
 		Class c = childTester.getClass();
+		double startTime = System.nanoTime();
 		for (Method method : c.getDeclaredMethods())
 			if (isTestMethod(method))
 				runTest(childTester, method);
-		printSummary();
+		printSummary((System.nanoTime() - startTime) / 1E9);
 	}
 
 	private boolean isTestMethod(Method method) {
