@@ -112,6 +112,20 @@ public class OFile extends File {
 	}
 
 	/**
+	 * Flushes the buffered writer if open.
+	 * @return OFile instance
+	 */
+	public OFile flush() {
+		try {
+			if (writerOpen)
+				bufferedWriter.flush();
+			return this;
+		} catch(IOException e) {
+			return null;
+		}
+	}
+
+	/**
 	 * Reads a single line from file as string.
 	 * @return the line
 	 */
