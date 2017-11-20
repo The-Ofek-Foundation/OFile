@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -408,8 +409,38 @@ public class OFile extends File {
 	}
 
 	/**
+	 * Returns the number of lines contained in the file efficiently
+	 * @return number of lines contained in the file
+	 */
+	public int countLines() {
+		close();
+		try {
+			InputStream is = new BufferedInputStream(new FileInputStream(this));
+			try {
+				byte[] c = new byte[1024];
+				int count = 0;
+				int readChars = 0;
+				boolean empty = true;
+				while ((readChars = is.read(c)) != -1) {
+					empty = false;
+					for (int i = 0; i < readChars; ++i) {
+						if (c[i] == '\n') {
+							++count;
+						}
+					}
+				}
+				return (count == 0 && !empty) ? 1 : count;
+			} finally {
+				is.close();
+			}
+		} catch (IOException e) {
+			return -1;
+		}
+	}
+
+	/**
 	 * Creates a checksum for a file
-	 * @param  file      the {@link Fike} to create the checksum for
+	 * @param  file      the {@link File} to create the checksum for
 	 * @return           a byte checksum array
 	 * @throws Exception Pokemon error handling.
 	 */

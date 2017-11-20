@@ -97,6 +97,16 @@ public class BugTester extends CodeTester {
 		assertClear(testFile);
 	}
 
+	public void _testFileLength() {
+		int numLines = (int)1e4;
+		for (int i = 0; i < numLines; i++)
+			testFile.write(String.format("Line Num: %d\n", (i + 1)));
+
+		assertEqual(testFile.countLines(), numLines, true);
+
+		assertClear(testFile);
+	}
+
 	public void _testFileCopy() {
 		assertExists(COPY_FILE_NAME, false);
 
